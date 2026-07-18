@@ -45,7 +45,7 @@ if [ -n "$branch" ]; then
   fi
 fi
 
-# --- Segment 3: token usage + budget + bar ---
+# --- Segment 3: token usage + budget ---
 fmt_tokens() {
   # integer tokens -> e.g. 45.2k
   awk -v n="$1" 'BEGIN{
@@ -64,16 +64,7 @@ if   [ "$pct" -ge 80 ]; then tcol="$RED"
 elif [ "$pct" -ge 50 ]; then tcol="$YELLOW"
 else tcol="$GREEN"; fi
 
-# 10-char bar
-bar=""
-filled=$(( pct / 10 ))
-[ "$filled" -gt 10 ] && filled=10
-i=0
-while [ "$i" -lt 10 ]; do
-  if [ "$i" -lt "$filled" ]; then bar="${bar}▓"; else bar="${bar}░"; fi
-  i=$((i+1))
-done
-seg_tok="${tcol}${bar}${RESET} ${tcol}${used_h}${RESET}${DIM}${GREY}/${win_h} ${pct}%${RESET}"
+seg_tok="${tcol}${used_h}${RESET}${DIM}${GREY}/${win_h}${RESET}"
 
 # --- Assemble ---
 line="${seg_model}"
