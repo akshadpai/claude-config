@@ -1,0 +1,11 @@
+*
+
+!.gitignore
+!statusline.sh
+!CLAUDE.md
+!commands/
+!commands/**
+!agents/
+!agents/**
+!skills/
+!skills/**
