@@ -29,7 +29,7 @@ Follow these steps:
      Resolves #$1
      ```
 
-   - Use a short, clear PR title and a body summarizing what changed and why, plus a test plan, per standard PR conventions.
+   - Use a short, clear PR title and a body summarizing what changed and why, per standard PR conventions.
 
 6. **Clean up the worktree.** Once the PR is created successfully, remove the worktree with `git worktree remove worktrees/<branch-name>` so the branch is free to be checked out in the main worktree (e.g. for local testing). Do not delete the branch itself.
 
