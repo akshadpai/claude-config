@@ -39,9 +39,10 @@ if [ -n "$branch" ]; then
   if ! (cd "$CWD" 2>/dev/null && git diff --quiet --ignore-submodules HEAD 2>/dev/null); then
     dirty="${YELLOW}*${RESET}"
   fi
-  seg_git="${CYAN} ${branch}${RESET}${dirty}"
   if [ "$WORKTREE" != "-" ] && [ -n "$WORKTREE" ]; then
-    seg_git="${seg_git} ${DIM}${GREY}⌥${WORKTREE}${RESET}"
+    seg_git="${DIM}${GREY}worktree: ${RESET}${CYAN}${branch}${RESET}${dirty}"
+  else
+    seg_git="${CYAN} ${branch}${RESET}${dirty}"
   fi
 fi
 
