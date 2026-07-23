@@ -1,6 +1,7 @@
 *
 
 !.gitignore
+!README.md
 !statusline.sh
 !CLAUDE.md
 !commands/
@@ -9,3 +10,5 @@
 !agents/**
 !skills/
 !skills/**
+!images/
+!images/**

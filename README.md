@@ -2,6 +2,10 @@
 
 My personal Claude Code configuration (`~/.claude`), version-controlled.
 
+## Statusline
+
+![Statusline example](images/statusline.png)
+
 ## Setting up on a new machine
 
 ```bash
