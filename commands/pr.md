@@ -1,11 +1,13 @@
 ---
 description: Implement a GitHub issue in a new worktree/branch and open a PR
-argument-hint: <issue-number> [--draft]
+argument-hint: <issue-number> [--draft] [--base <branch>]
 ---
 
 Resolve GitHub issue #$1 end to end: implement it, open a PR, and clean up.
 
 If `$ARGUMENTS` contains `--draft`, open the PR as a draft (`gh pr create --draft`). Otherwise open it as a normal, ready-for-review PR.
+
+If `$ARGUMENTS` contains `--base <branch>`, use `<branch>` as the base for the new branch/worktree and as the PR's target branch (`gh pr create --base <branch>`). Otherwise default to the repo's main/integration branch as defined in CLAUDE.md (e.g. `develop`), falling back to the current default branch if CLAUDE.md doesn't specify one — do not silently branch off whatever happens to be checked out.
 
 Follow these steps:
 
@@ -13,9 +15,10 @@ Follow these steps:
 
 2. **Create the branch and worktree.**
    - Branch name: `$1-<short-hyphenated-description>` derived from the issue title, per the branch naming convention in CLAUDE.md (lowercase, hyphen-separated, no prefix like `claude/` or `fix/`).
+   - Determine the base branch per the `--base` rule above. Make sure it's up to date locally (`git fetch origin <base-branch>`) before branching from it.
    - Create the `worktrees/` directory at the repo root if it doesn't exist.
    - If a worktree for this branch already exists under `worktrees/`, reuse it instead of creating a new one.
-   - Otherwise create it with `git worktree add worktrees/<branch-name> -b <branch-name>`.
+   - Otherwise create it with `git worktree add worktrees/<branch-name> -b <branch-name> <base-branch>`.
 
 3. **Implement the fix inside the worktree.** Work entirely within `worktrees/<branch-name>`. Read the issue requirements carefully and make the necessary code changes to resolve it. Run any relevant tests/checks that exist in the repo before proceeding.
 
@@ -23,7 +26,7 @@ Follow these steps:
 
 5. **Push and open the PR.**
    - Push the branch: `git push -u origin <branch-name>`.
-   - Create the PR with `gh pr create` (add `--draft` if requested per above). The PR body MUST include a closing reference in the exact form:
+   - Create the PR with `gh pr create` (add `--draft` if requested per above, and `--base <base-branch>` if it differs from the repo default). The PR body MUST include a closing reference in the exact form:
 
      ```
      Resolves #$1
