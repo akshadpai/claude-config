@@ -36,14 +36,19 @@ Follow these steps:
 5. **Push and open the PR.**
    - Push the branch: `git push -u origin <branch-name>`.
    - Create the PR with `gh pr create` (add `--draft` if requested per above, and `--base <base-branch>` if it differs from the repo default).
-     - Issue mode: the PR body MUST include a closing reference in the exact form:
+   - Use a short, clear PR title. The PR body MUST follow this format:
 
-       ```
-       Resolves #$1
-       ```
+     ```
+     ## Summary
+     - <concise bullet point>
+     - <concise bullet point>
 
-     - Freeform mode: there's no issue to close, so omit the `Resolves #` line — the body should just clearly describe what changed and why.
-   - Use a short, clear PR title and a body summarizing what changed and why, per standard PR conventions.
+     **Resolves #$1**
+     ```
+
+     - `## Summary` always comes first, followed by 1-5 concise bullet points describing what changed and why — scale the number of bullets to the complexity of the change (a trivial fix gets 1 bullet, a larger change gets up to 5).
+     - Issue mode: end the body with a `**Resolves #$1**` line (bolded), so GitHub auto-closes the linked issue on merge.
+     - Freeform mode: there's no issue to close, so omit the `Resolves #` line entirely.
 
 6. **Clean up the worktree.** Once the PR is created successfully, remove the worktree with `git worktree remove worktrees/<branch-name>` so the branch is free to be checked out in the main worktree (e.g. for local testing). Do not delete the branch itself.
 
