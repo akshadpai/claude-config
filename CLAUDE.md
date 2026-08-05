@@ -2,11 +2,24 @@
 
 ## Pull Requests
 
-When creating a GitHub PR that resolves an issue, always include a closing reference in the PR body using the format:
+PR descriptions must be short. The body is exactly a `## Summary` heading, the bullets, and — for a PR that resolves an issue — a closing reference. Nothing else:
 
-**Resolves #1**
+```
+## Summary
+- Course structure settings now reach the module generation prompt.
+- The block-count target is clamped before the tolerance band is derived.
+- An out-of-range block count now warns instead of raising.
 
-Replace `1` with the actual issue number. This should appear in the PR description so GitHub automatically closes the linked issue when the PR is merged.
+**Resolves #372**
+```
+
+Rules:
+
+- **5 bullets is the absolute maximum**, and 3-5 is the normal range. Fewer is better — a trivial fix gets 1.
+- **Each bullet is exactly one sentence** saying what changed. No second sentence, no semicolon-chained clauses, no parenthetical rationale, no nested sub-bullets, no code walkthroughs.
+- Describe *what changed*, not the investigation behind it. No narration of prior behaviour, no "previously X, so Y", no explanation of why the old code was wrong.
+- **No other sections.** Never add "Note for the reviewer", "Testing", "Background", "Motivation", "Implementation details", "Follow-ups", or any heading beyond `## Summary`. Context that doesn't fit in the bullets belongs in a PR comment or a follow-up issue, not the body.
+- End an issue-linked PR with a bolded `**Resolves #1**` line (replace `1` with the actual issue number) so GitHub auto-closes the issue on merge. Omit the line entirely when there's no issue.
 
 ## Branch Naming
 
