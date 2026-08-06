@@ -24,6 +24,6 @@ Follow these steps:
 
 5. **Remove the worktree.** `git worktree remove worktrees/<branch-name>` from the repo root. Do NOT delete the branch itself — it stays available for later checkout, review, or merging.
 
-6. **Report back**: the branch name, a one-line summary of what was done, and note that the branch was left in place locally with no push and no PR opened (the user can push/open a PR themselves, or ask `/pr`-style tooling to pick it up).
+6. **Report back**: the branch name, a one-line summary of what was done.
 
 Confirm with the user before doing anything ambiguous or destructive — don't guess at scope for an under-specified task.
