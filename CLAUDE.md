@@ -15,7 +15,8 @@ PR descriptions must be short. The body is exactly a `## Summary` heading, the b
 
 Rules:
 
-- **5 bullets is the absolute maximum**, and 3-5 is the normal range. Fewer is better — a trivial fix gets 1.
+- **3 bullets is the normal maximum**; 5 is a hard ceiling, used only when the change genuinely spans that many distinct things. Fewer is better — a trivial fix gets 1.
+- **Don't report tests, changelog entries, or other routine scaffolding** — a bullet like "Added tests asserting the centered alignment" only belongs in a PR whose actual purpose was test (or changelog) work. Otherwise spend the bullets on the behaviour that changed.
 - **Each bullet is exactly one sentence** saying what changed. No second sentence, no semicolon-chained clauses, no parenthetical rationale, no nested sub-bullets, no code walkthroughs.
 - Describe *what changed*, not the investigation behind it. No narration of prior behaviour, no "previously X, so Y", no explanation of why the old code was wrong.
 - **No other sections.** Never add "Note for the reviewer", "Testing", "Background", "Motivation", "Implementation details", "Follow-ups", or any heading beyond `## Summary`. Context that doesn't fit in the bullets belongs in a PR comment or a follow-up issue, not the body.

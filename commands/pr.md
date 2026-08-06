@@ -36,7 +36,7 @@ Follow these steps:
 5. **Push and open the PR.**
    - Push the branch: `git push -u origin <branch-name>`.
    - Create the PR with `gh pr create` (add `--draft` if requested per above, and `--base <base-branch>` if it differs from the repo default).
-   - Use a short, clear PR title. The PR body MUST follow the PR description format in CLAUDE.md — `## Summary`, at most 5 one-sentence bullets, no other sections.
+   - Use a short, clear PR title. The PR body MUST follow the PR description format in CLAUDE.md — `## Summary`, at most 3 one-sentence bullets (5 only if the change truly spans that many distinct things), no other sections.
      - Issue mode: end the body with a `**Resolves #$1**` line (bolded), so GitHub auto-closes the linked issue on merge.
      - Freeform mode: there's no issue to close, so omit the `Resolves #` line entirely.
 
