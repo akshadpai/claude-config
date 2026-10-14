@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code status line — model/effort · git branch/worktree · token usage
+# Claude Code status line — git branch/worktree · token usage · model/effort
 # Reads session JSON on stdin (see https://code.claude.com/docs/en/statusline).
 
 input=$(cat)
@@ -68,7 +68,7 @@ else tcol="$GREEN"; fi
 seg_tok="${tcol}${used_h}${RESET}${DIM}${GREY}/${win_h}${RESET}"
 
 # --- Assemble ---
-line="${seg_model}"
-[ -n "$seg_git" ] && line="${line}${SEP}${seg_git}"
-line="${line}${SEP}${seg_tok}"
+line=""
+[ -n "$seg_git" ] && line="${seg_git}${SEP}"
+line="${line}${seg_tok}${SEP}${seg_model}"
 printf '%b' "$line"
