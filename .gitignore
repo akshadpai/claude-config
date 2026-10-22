@@ -6,6 +6,8 @@
 !CLAUDE.md
 !commands/
 !commands/**
+!bin/
+!bin/**
 !agents/
 !agents/**
 !skills/
