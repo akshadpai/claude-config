@@ -12,6 +12,8 @@
 !agents/**
 !skills/
 !skills/**
+!hooks/
+!hooks/**
 !images/
 !images/**
 
