@@ -16,3 +16,12 @@ git clone git@github.com:akshadpai/claude-config.git ~/claude-config
 rm -rf ~/.claude
 ln -s ~/claude-config ~/.claude
 ```
+
+## Herdr
+
+The Herdr config lives in `herdr/` and is symlinked into place:
+
+```bash
+mkdir -p ~/.config/herdr
+ln -sf ~/claude-config/herdr/config.toml ~/.config/herdr/config.toml
+```
