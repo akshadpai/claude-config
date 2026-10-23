@@ -2,7 +2,7 @@
 """Print the conversation of the agent in a neighbouring Herdr pane, or every
 other pane in the current tab.
 
-Usage: herdr-pane-context.py <tab|up|down|left|right|top|bottom>
+Usage: pane-context.py <tab|up|down|left|right|top|bottom>
 
 Claude panes are read from their session transcript; any other pane falls
 back to Herdr's terminal scrollback.
