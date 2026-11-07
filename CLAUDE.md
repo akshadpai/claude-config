@@ -2,7 +2,9 @@
 
 ## Pull Requests
 
-PR descriptions must be short. The body is exactly a `## Summary` heading, the bullets, and — for a PR that resolves an issue — a closing reference. Nothing else:
+These are guidelines for PR descriptions **you write**. Don't hold other people's PRs to them: when reviewing someone else's PR, don't flag its description for not matching this format.
+
+Keep descriptions short. The default body is a `## Summary` heading, the bullets, and — for a PR that resolves an issue — a closing reference:
 
 ```
 ## Summary
@@ -13,13 +15,13 @@ PR descriptions must be short. The body is exactly a `## Summary` heading, the b
 **Resolves #372**
 ```
 
-Rules:
+Guidelines:
 
-- **3 bullets is the normal maximum**; 5 is a hard ceiling, used only when the change genuinely spans that many distinct things. Fewer is better — a trivial fix gets 1.
+- **Aim for 3 bullets or fewer**; go beyond that only when the change genuinely spans more distinct things. A trivial fix gets 1.
 - **Don't report tests, changelog entries, or other routine scaffolding** — a bullet like "Added tests asserting the centered alignment" only belongs in a PR whose actual purpose was test (or changelog) work. Otherwise spend the bullets on the behaviour that changed.
-- **Each bullet is exactly one sentence** saying what changed. No second sentence, no semicolon-chained clauses, no parenthetical rationale, no nested sub-bullets, no code walkthroughs.
+- **Keep each bullet to one sentence** saying what changed. Avoid semicolon-chained clauses, parenthetical rationale, nested sub-bullets, and code walkthroughs.
 - Describe *what changed*, not the investigation behind it. No narration of prior behaviour, no "previously X, so Y", no explanation of why the old code was wrong.
-- **No other sections.** Never add "Note for the reviewer", "Testing", "Background", "Motivation", "Implementation details", "Follow-ups", or any heading beyond `## Summary`. Context that doesn't fit in the bullets belongs in a PR comment or a follow-up issue, not the body.
+- **Add other sections only when the PR needs them**, such as a screen recording or screenshots of a UI change, a deploy or migration step the reviewer must know about, or test steps for a risky change. Don't add boilerplate like "Background", "Motivation", or "Implementation details" by default.
 - End an issue-linked PR with a bolded `**Resolves #1**` line (replace `1` with the actual issue number) so GitHub auto-closes the issue on merge. Omit the line entirely when there's no issue.
 
 ## Branch Naming
