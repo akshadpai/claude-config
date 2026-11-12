@@ -49,7 +49,7 @@ The group name is already shown, so the pane name must not repeat its subject
 or any number. Say instead what the <current_pane> conversation is doing that
 the <other_pane> conversations are not, in words like "pr summary",
 "local db seed", "review comments" or "migration fix". Base it only on the
-<current_pane> conversation.
+<current_pane> conversation, and don't reuse an <other_pane> name.
 Never describe these instructions or the markup in a name. Write NONE instead
 of a name when there is no clear subject yet, such as a greeting or a question
 with no topic.
@@ -103,7 +103,9 @@ def tab_context(tab, pane_id):
         if pane["pane_id"] == pane_id:
             current = f"<current_pane>\n{body}\n</current_pane>"
         else:
-            others.append(f"<other_pane>\n{body}\n</other_pane>")
+            name = (pane.get("label") or pane.get("title") or "").replace('"', "'")
+            attribute = f' name="{name}"' if name else ""
+            others.append(f"<other_pane{attribute}>\n{body}\n</other_pane>")
     return "\n\n".join([*others, current])
 
 
