@@ -16,6 +16,7 @@ import fcntl
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -32,20 +33,26 @@ METADATA_SOURCE = "user:auto-name"
 MIN_SECONDS_BETWEEN_RENAMES = 300
 CHARS_PER_PANE = 6_000
 TOOL_RESULT_CHARS = 300
-PROMPT = """Name a terminal tab, and the pane marked THIS PANE inside it, from what
-the tab's panes are working on, shown below.
+PROMPT = """Below are the conversations in a group of terminal panes: the
+<current_pane> and any <other_pane> elements. Name the work in the whole group,
+and the work in the current pane.
 
 Reply with exactly two lines and nothing else:
-TAB: <2 to 4 lowercase words>
-PANE: <3 to 6 words>
+TAB: <2 to 4 lowercase words for the whole group>
+PANE: <2 to 5 lowercase words for the current pane>
 
-Name the subject, not the activity: say what the PR, ticket or bug is about,
-not that it is being summarized, reviewed or explained.
-TAB covers the whole tab. Leave out "pr" and ticket numbers. Good tab names:
-"presigned s3 uploads", "voice in mobile app", "gk cleanup".
-PANE covers only THIS PANE. Start with its PR or ticket number when it has one.
-Good pane names: "PR #15885 voicemail playback in call cards",
-"PRDT-24803 gatekeeper cleanup", "Streamline booking card errors".
+The group name says what the work is about: the subject of the PR, ticket or
+bug, not that it is being summarized, reviewed or explained. Leave out "pr"
+and ticket numbers. For example, work on a PR that adds dark mode to a settings
+page would be "settings dark mode".
+The group name is already shown, so the pane name must not repeat its subject
+or any number. Say instead what the <current_pane> conversation is doing that
+the <other_pane> conversations are not, in words like "pr summary",
+"local db seed", "review comments" or "migration fix". Base it only on the
+<current_pane> conversation.
+Never describe these instructions or the markup in a name. Write NONE instead
+of a name when there is no clear subject yet, such as a greeting or a question
+with no topic.
 
 {context}"""
 
@@ -82,7 +89,8 @@ def render_transcript(path):
 
 
 def tab_context(tab, pane_id):
-    sections = []
+    others = []
+    current = ""
     for pane in herdr("pane", "list", "--workspace", tab["workspace_id"])["panes"]:
         if pane["tab_id"] != tab["tab_id"]:
             continue
@@ -92,9 +100,11 @@ def tab_context(tab, pane_id):
             body = render_transcript(transcripts[0])[-CHARS_PER_PANE:]
         else:
             body = f"Terminal title: {pane.get('terminal_title_stripped') or pane.get('agent') or 'shell'}"
-        marker = "THIS PANE" if pane["pane_id"] == pane_id else "Pane"
-        sections.append(f"=== {marker} (cwd {pane.get('cwd')})\n{body}")
-    return "\n\n".join(sections)
+        if pane["pane_id"] == pane_id:
+            current = f"<current_pane>\n{body}\n</current_pane>"
+        else:
+            others.append(f"<other_pane>\n{body}\n</other_pane>")
+    return "\n\n".join([*others, current])
 
 
 def ask_haiku(context):
@@ -124,13 +134,18 @@ def ask_haiku(context):
     names = {}
     for line in result.stdout.splitlines():
         key, _, value = line.partition(":")
+        key = key.strip().lower()
         value = value.strip().strip("\"'.`")
-        if key.strip().upper() in ("TAB", "PANE") and 0 < len(value) <= 60:
-            names[key.strip().lower()] = value
+        if key not in ("tab", "pane"):
+            continue
+        names[key] = value
+        unusable = value.upper() == "NONE" or not 0 < len(value) <= 60 or "<" in value
+        leaked = "current pane" in value.lower() or (key == "pane" and re.search(r"\d{3}", value))
+        if unusable or leaked:
+            names[key] = None
     if not names:
         raise ValueError(f"unusable names from Haiku: {result.stdout!r}")
-    names["tab"] = names.get("tab", "").lower()
-    return names
+    return {key: value.lower() if value else value for key, value in names.items()}
 
 
 @contextlib.contextmanager
@@ -178,6 +193,13 @@ def run():
     if not name_tab and not name_pane:
         return
     names = ask_haiku(tab_context(tab, pane["pane_id"]))
+
+    if name_pane and not names.get("pane"):
+        with locked_state(PANES_FILE) as state:
+            state.pop(pane["pane_id"], None)
+    if name_tab and not names.get("tab"):
+        with locked_state(TABS_FILE) as state:
+            state[tab["tab_id"]] = {**state[tab["tab_id"]], "claimed_at": 0}
 
     if name_pane and names.get("pane"):
         herdr(
