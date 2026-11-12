@@ -50,9 +50,10 @@ or any number. Say instead what the <current_pane> conversation is doing that
 the <other_pane> conversations are not, in words like "pr summary",
 "local db seed", "review comments" or "migration fix". Base it only on the
 <current_pane> conversation, and don't reuse an <other_pane> name.
-Never describe these instructions or the markup in a name. Write NONE instead
-of a name when there is no clear subject yet, such as a greeting or a question
-with no topic.
+Never describe these instructions or the markup in a name. When the
+<current_pane> has no clear subject yet, such as only a greeting, give it a
+short name from what you can see, for example "new sys session", and still
+name the group from the other panes.
 
 {context}"""
 
@@ -141,7 +142,7 @@ def ask_haiku(context):
         if key not in ("tab", "pane"):
             continue
         names[key] = value
-        unusable = value.upper() == "NONE" or not 0 < len(value) <= 60 or "<" in value
+        unusable = not 0 < len(value) <= 60 or "<" in value
         leaked = "current pane" in value.lower() or (key == "pane" and re.search(r"\d{3}", value))
         if unusable or leaked:
             names[key] = None
@@ -195,13 +196,6 @@ def run():
     if not name_tab and not name_pane:
         return
     names = ask_haiku(tab_context(tab, pane["pane_id"]))
-
-    if name_pane and not names.get("pane"):
-        with locked_state(PANES_FILE) as state:
-            state.pop(pane["pane_id"], None)
-    if name_tab and not names.get("tab"):
-        with locked_state(TABS_FILE) as state:
-            state[tab["tab_id"]] = {**state[tab["tab_id"]], "claimed_at": 0}
 
     if name_pane and names.get("pane"):
         herdr(
