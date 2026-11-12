@@ -28,7 +28,7 @@ ln -sf ~/claude-config/herdr/config.toml ~/.config/herdr/config.toml
 
 ### Auto-named tabs
 
-`herdr/auto-name.py` names a Herdr tab after what its panes are working on, using Claude Haiku. It only renames tabs still showing Herdr's default number, or a name it set itself. Turn it off with `tabs = false` in `herdr/auto-name.toml`. Its records and error log are in `~/.local/state/herdr-auto-name/`. It runs as a `Stop` hook, which lives in the untracked `settings.json`:
+`herdr/auto-name.py` names a Herdr tab after what its panes are working on, using Claude Haiku. It only renames tabs still showing Herdr's default number, or a name it set itself. Turn it off by creating `herdr/auto-name.toml`, which git ignores, containing `tabs = false`. Its records and error log are in `~/.local/state/herdr-auto-name/`. It runs as a `Stop` hook, which lives in the untracked `settings.json`:
 
 ```json
 "Stop": [

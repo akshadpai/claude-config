@@ -8,6 +8,7 @@
 !commands/**
 !herdr/
 !herdr/**
+herdr/auto-name.toml
 !agents/
 !agents/**
 !skills/
