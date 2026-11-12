@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Name the current Herdr tab after what its panes are working on.
+"""Name the current Herdr tab and pane after what they are working on.
 
 Run as a Claude Code Stop hook. It returns at once and does the work in a
 detached child, so Claude never waits on it. A tab is named only while its
 label is still Herdr's default number, or a label this script set; a tab you
-renamed yourself is never touched. Set `tabs = false` in auto-name.toml, next
-to this script, to turn it off. The name comes from Claude Haiku, given the
-recent conversation of every Claude pane in the tab and the title of the rest.
+renamed yourself is never touched. The pane gets a display-only title, which
+a name you give the pane always replaces. Both names come from one Claude Haiku
+call, given the recent conversation of every Claude pane in the tab and the
+title of the rest. Set `tabs = false` or `panes = false` in auto-name.toml,
+next to this script, to turn either off.
 """
 
+import contextlib
 import fcntl
 import glob
 import json
@@ -22,18 +25,27 @@ import traceback
 
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "auto-name.toml")
 STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "herdr-auto-name")
-STATE_FILE = os.path.join(STATE_DIR, "tabs.json")
+TABS_FILE = os.path.join(STATE_DIR, "tabs.json")
+PANES_FILE = os.path.join(STATE_DIR, "panes.json")
 LOG_FILE = os.path.join(STATE_DIR, "error.log")
+METADATA_SOURCE = "user:auto-name"
 MIN_SECONDS_BETWEEN_RENAMES = 300
 CHARS_PER_PANE = 6_000
 TOOL_RESULT_CHARS = 300
-PROMPT = """Name a terminal tab from what its panes are working on, shown below.
+PROMPT = """Name a terminal tab, and the pane marked THIS PANE inside it, from what
+the tab's panes are working on, shown below.
 
-Reply with the name only: 2 to 4 lowercase words, no quotes or punctuation.
+Reply with exactly two lines and nothing else:
+TAB: <2 to 4 lowercase words>
+PANE: <3 to 6 words>
+
 Name the subject, not the activity: say what the PR, ticket or bug is about,
-and leave out words like "pr", "summary", "review" and ticket numbers.
-Good names: "presigned s3 uploads", "voice in mobile app", "gk cleanup",
-"hide irrelevant app fields".
+not that it is being summarized, reviewed or explained.
+TAB covers the whole tab. Leave out "pr" and ticket numbers. Good tab names:
+"presigned s3 uploads", "voice in mobile app", "gk cleanup".
+PANE covers only THIS PANE. Start with its PR or ticket number when it has one.
+Good pane names: "PR #15885 voicemail playback in call cards",
+"PRDT-24803 gatekeeper cleanup", "Streamline booking card errors".
 
 {context}"""
 
@@ -41,7 +53,7 @@ Good names: "presigned s3 uploads", "voice in mobile app", "gk cleanup",
 def herdr(*args):
     result = subprocess.run(["herdr", *args], capture_output=True, text=True, timeout=10)
     result.check_returncode()
-    return json.loads(result.stdout)["result"]
+    return json.loads(result.stdout)["result"] if result.stdout.strip() else None
 
 
 def render_transcript(path):
@@ -69,16 +81,19 @@ def render_transcript(path):
     return "\n".join(lines)
 
 
-def tab_context(tab):
+def tab_context(tab, pane_id):
     sections = []
     for pane in herdr("pane", "list", "--workspace", tab["workspace_id"])["panes"]:
         if pane["tab_id"] != tab["tab_id"]:
             continue
         session = (pane.get("agent_session") or {}).get("value")
         transcripts = glob.glob(os.path.expanduser(f"~/.claude/projects/*/{session}.jsonl")) if session else []
-        body = render_transcript(transcripts[0])[-CHARS_PER_PANE:] if transcripts else ""
-        title = pane.get("terminal_title_stripped") or pane.get("agent") or "shell"
-        sections.append(f"=== Pane: {title} (cwd {pane.get('cwd')})\n{body}".strip())
+        if transcripts:
+            body = render_transcript(transcripts[0])[-CHARS_PER_PANE:]
+        else:
+            body = f"Terminal title: {pane.get('terminal_title_stripped') or pane.get('agent') or 'shell'}"
+        marker = "THIS PANE" if pane["pane_id"] == pane_id else "Pane"
+        sections.append(f"=== {marker} (cwd {pane.get('cwd')})\n{body}")
     return "\n\n".join(sections)
 
 
@@ -106,52 +121,82 @@ def ask_haiku(context):
         env=env,
     )
     result.check_returncode()
-    name = result.stdout.strip().splitlines()[-1].strip().strip("\"'.`").lower()
-    if not name or len(name) > 40:
-        raise ValueError(f"unusable name from Haiku: {result.stdout!r}")
-    return name
+    names = {}
+    for line in result.stdout.splitlines():
+        key, _, value = line.partition(":")
+        value = value.strip().strip("\"'.`")
+        if key.strip().upper() in ("TAB", "PANE") and 0 < len(value) <= 60:
+            names[key.strip().lower()] = value
+    if not names:
+        raise ValueError(f"unusable names from Haiku: {result.stdout!r}")
+    names["tab"] = names.get("tab", "").lower()
+    return names
 
 
-def claim(tab):
-    """Reserve this tab for a rename. Returns False if it isn't ours to rename yet."""
-    with open(STATE_FILE, "a+", encoding="utf-8") as f:
+@contextlib.contextmanager
+def locked_state(path):
+    with open(path, "a+", encoding="utf-8") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         f.seek(0)
         state = json.loads(f.read() or "{}")
+        yield state
+        f.seek(0)
+        f.truncate()
+        json.dump(state, f)
+
+
+def claim_tab(tab):
+    """Reserve this tab for a rename. Returns False if it isn't ours to rename yet."""
+    with locked_state(TABS_FILE) as state:
         entry = state.get(tab["tab_id"]) or {}
-        label = tab["label"]
-        if not label.isdigit() and label != entry.get("label"):
+        if not tab["label"].isdigit() and tab["label"] != entry.get("label"):
             return False
         if time.time() - entry.get("claimed_at", 0) < MIN_SECONDS_BETWEEN_RENAMES:
             return False
-        state[tab["tab_id"]] = {"label": label, "claimed_at": time.time()}
-        f.seek(0)
-        f.truncate()
-        json.dump(state, f)
+        state[tab["tab_id"]] = {"label": tab["label"], "claimed_at": time.time()}
     return True
 
 
-def record(tab_id, label):
-    with open(STATE_FILE, "r+", encoding="utf-8") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        state = json.loads(f.read() or "{}")
-        state[tab_id] = {**state.get(tab_id, {}), "label": label}
-        f.seek(0)
-        f.truncate()
-        json.dump(state, f)
+def claim_pane(pane):
+    """Reserve this pane for a new title. A pane you named keeps your name, so it never needs one."""
+    if pane.get("label"):
+        return False
+    with locked_state(PANES_FILE) as state:
+        if time.time() - state.get(pane["pane_id"], 0) < MIN_SECONDS_BETWEEN_RENAMES:
+            return False
+        state[pane["pane_id"]] = time.time()
+    return True
 
 
 def run():
-    tab_id = herdr("pane", "get", os.environ["HERDR_PANE_ID"])["pane"]["tab_id"]
-    tab = herdr("tab", "get", tab_id)["tab"]
-    if not claim(tab):
+    pane = herdr("pane", "get", os.environ["HERDR_PANE_ID"])["pane"]
+    tab = herdr("tab", "get", pane["tab_id"])["tab"]
+    if pane.get("label") and pane.get("title"):
+        herdr("pane", "report-metadata", pane["pane_id"], "--source", METADATA_SOURCE, "--clear-title")
+    name_tab = enabled("tabs") and claim_tab(tab)
+    name_pane = enabled("panes") and claim_pane(pane)
+    if not name_tab and not name_pane:
         return
-    name = ask_haiku(tab_context(tab))
+    names = ask_haiku(tab_context(tab, pane["pane_id"]))
+
+    if name_pane and names.get("pane"):
+        herdr(
+            "pane",
+            "report-metadata",
+            pane["pane_id"],
+            "--source",
+            METADATA_SOURCE,
+            "--agent",
+            "claude",
+            "--title",
+            names["pane"],
+        )
+
     current = herdr("tab", "get", tab["tab_id"])["tab"]["label"]
-    if current != tab["label"] or name == current:
-        return
-    record(tab["tab_id"], name)
-    herdr("tab", "rename", tab["tab_id"], name)
+    if name_tab and names.get("tab") and current == tab["label"] and names["tab"] != current:
+        with locked_state(TABS_FILE) as state:
+            state[tab["tab_id"]] = {**state.get(tab["tab_id"], {}), "label": names["tab"]}
+        herdr("tab", "rename", tab["tab_id"], names["tab"])
 
 
 def enabled(feature):
@@ -162,7 +207,7 @@ def enabled(feature):
         return True
 
 
-if os.environ.get("HERDR_ENV") != "1" or not os.environ.get("HERDR_PANE_ID") or not enabled("tabs"):
+if os.environ.get("HERDR_ENV") != "1" or not os.environ.get("HERDR_PANE_ID") or not (enabled("tabs") or enabled("panes")):
     sys.exit(0)
 
 os.makedirs(STATE_DIR, exist_ok=True)
