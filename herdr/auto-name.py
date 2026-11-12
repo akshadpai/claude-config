@@ -4,7 +4,8 @@
 Run as a Claude Code Stop hook. It returns at once and does the work in a
 detached child, so Claude never waits on it. A tab is named only while its
 label is still Herdr's default number, or a label this script set; a tab you
-renamed yourself is never touched. The name comes from Claude Haiku, given the
+renamed yourself is never touched. Set `tabs = false` in auto-name.toml, next
+to this script, to turn it off. The name comes from Claude Haiku, given the
 recent conversation of every Claude pane in the tab and the title of the rest.
 """
 
@@ -16,10 +17,13 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 import traceback
 
-STATE_FILE = os.path.expanduser("~/.cache/herdr-auto-name-tab.json")
-LOG_FILE = os.path.expanduser("~/.cache/herdr-auto-name-tab.log")
+SETTINGS_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "auto-name.toml")
+STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "herdr-auto-name")
+STATE_FILE = os.path.join(STATE_DIR, "tabs.json")
+LOG_FILE = os.path.join(STATE_DIR, "error.log")
 MIN_SECONDS_BETWEEN_RENAMES = 300
 CHARS_PER_PANE = 6_000
 TOOL_RESULT_CHARS = 300
@@ -110,7 +114,6 @@ def ask_haiku(context):
 
 def claim(tab):
     """Reserve this tab for a rename. Returns False if it isn't ours to rename yet."""
-    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "a+", encoding="utf-8") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         f.seek(0)
@@ -151,8 +154,18 @@ def run():
     herdr("tab", "rename", tab["tab_id"], name)
 
 
-if os.environ.get("HERDR_ENV") != "1" or not os.environ.get("HERDR_PANE_ID"):
+def enabled(feature):
+    try:
+        with open(SETTINGS_FILE, "rb") as f:
+            return tomllib.load(f).get(feature, True) is not False
+    except FileNotFoundError:
+        return True
+
+
+if os.environ.get("HERDR_ENV") != "1" or not os.environ.get("HERDR_PANE_ID") or not enabled("tabs"):
     sys.exit(0)
+
+os.makedirs(STATE_DIR, exist_ok=True)
 
 if os.fork() == 0:
     os.setsid()

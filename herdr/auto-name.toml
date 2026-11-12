@@ -1,0 +1,2 @@
+# Switches for auto-name.py, read every time it runs. Changes apply at once.
+tabs = true
