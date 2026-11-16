@@ -2,7 +2,7 @@
 """Print the conversation of the agent in a neighbouring Herdr pane, or every
 other pane in the current tab.
 
-Usage: pane-context.py <tab|up|down|left|right|top|bottom>
+Usage: pane-context.py [--close] <tab|up|down|left|right|top|bottom>
 
 Claude panes are read from their session transcript; any other pane falls
 back to Herdr's terminal scrollback.
@@ -84,9 +84,13 @@ def print_pane(pane, max_chars):
     print(text + "\n")
 
 
-target = sys.argv[1].lower() if len(sys.argv) == 2 else ""
+args = sys.argv[1:]
+close = "--close" in args
+if close:
+    args.remove("--close")
+target = args[0].lower() if len(args) == 1 else ""
 if target != "tab" and target not in DIRECTIONS:
-    sys.exit(f"usage: {os.path.basename(sys.argv[0])} <tab|{'|'.join(DIRECTIONS)}>")
+    sys.exit(f"usage: {os.path.basename(sys.argv[0])} [--close] <tab|{'|'.join(DIRECTIONS)}>")
 
 if os.environ.get("HERDR_ENV") != "1" or not os.environ.get("HERDR_PANE_ID"):
     sys.exit("Not running inside a Herdr pane.")
@@ -101,8 +105,6 @@ if target == "tab":
     ]
     if not panes:
         sys.exit("No other panes in this tab.")
-    for pane in panes:
-        print_pane(pane, MAX_CHARS // len(panes))
 else:
     direction = DIRECTIONS[target]
     neighbor_id = herdr("pane", "neighbor", "--pane", own_pane["pane_id"], "--direction", direction)["neighbor"].get(
@@ -110,4 +112,12 @@ else:
     )
     if not neighbor_id:
         sys.exit(f"No pane {direction} of this one.")
-    print_pane(herdr("pane", "get", neighbor_id)["pane"], MAX_CHARS)
+    panes = [herdr("pane", "get", neighbor_id)["pane"]]
+
+for pane in panes:
+    print_pane(pane, MAX_CHARS // len(panes))
+
+if close:
+    for pane in panes:
+        herdr("pane", "close", pane["pane_id"])
+        print(f"Closed pane {pane['pane_id']}")
