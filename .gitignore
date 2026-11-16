@@ -13,6 +13,8 @@ herdr/auto-name.toml
 !agents/**
 !skills/
 !skills/**
+!hooks/
+!hooks/**
 !images/
 !images/**
 
