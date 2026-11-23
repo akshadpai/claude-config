@@ -1,7 +1,7 @@
 onboarding = false
 
 [theme]
-name = "one-dark"
+name = "catppuccin"
 auto_switch = false
 
 [ui]
