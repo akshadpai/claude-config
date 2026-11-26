@@ -26,6 +26,8 @@ Guidelines:
 
 ## Branch Naming
 
+A repository's own branch-naming rule, in its `CLAUDE.md` or other project instructions, takes precedence over this section. Use the format below only when the repository has no rule of its own, and don't rename a branch that already follows the repository's rule.
+
 When opening a branch related to a GitHub issue, use the following format:
 
 ```
@@ -38,7 +40,7 @@ For example, if the issue is #4 and the work is about adding authentication, the
 4-add-authentication
 ```
 
-Keep the branch name lowercase, hyphen-separated, and descriptive of the work being done. Do not prefix the branch name with `claude/` or `fix/` (or any other prefix) — it should start directly with the issue number.
+Keep the branch name lowercase, hyphen-separated, and descriptive of the work being done. When this fallback format applies, do not prefix the branch name with `claude/` or `fix/` (or any other prefix) — it should start directly with the issue number.
 
 # Git worktrees
 
